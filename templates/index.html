@@ -1,0 +1,64 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Student QR System</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+  
+    <nav class="navbar">
+        <div class="navbar-container">
+            <a href="/" class="navbar-brand">QR Attendance</a>
+            
+            <div class="navbar-toggle" id="mobile-menu">
+                <span class="bar"></span>
+                <span class="bar"></span>
+                <span class="bar"></span>
+            </div>
+            
+            <ul class="navbar-menu">
+                <li class="navbar-item">
+                    <a href="/" class="navbar-link">Home</a>
+                </li>
+                <li class="navbar-item">
+                    <a href="/about" class="navbar-link">About</a>
+                </li>
+                <li class="navbar-item">
+                    <a href="/contact" class="navbar-link">Contact Us</a>
+                </li>
+                <li class="navbar-item">
+                    <a href="/login" class="navbar-link login-btn">Login</a>
+                </li>
+            </ul>
+        </div>
+    </nav>
+
+     <div class="main-content">
+        {% block content %}{% endblock %}
+    </div>
+    <div class="container">
+        <h1>Student Attendance System</h1>
+        <div class="options">
+            <a href="/generator" class="btn">Generate QR Code</a>
+            <a href="/scanner" class="btn">Scan QR Code</a>
+        </div>
+    </div>
+    <div class="options">
+    <a href="/generator" class="btn">Generate QR Code</a>
+    <a href="/scanner" class="btn">Scan QR Code</a>
+    <a href="/saved_qr_codes" class="btn">View Saved QR Codes</a>
+    <a href="/scanned_qr_codes" class="btn">View Scan History</a>
+</div>
+
+ <div class="container 2">
+    <h2>Welcome to the Student Attendance System</h2>
+    <p>This system allows you to generate and scan QR codes for student attendance.</p>
+    <p>Use the buttons above to navigate through the system.</p>
+ </div>
+  
+    <footer>
+        <p>&copy; 2025 Student Attendance System</p>
+    </footer>
+</body>
+</html>
+

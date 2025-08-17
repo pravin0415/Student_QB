@@ -1,0 +1,44 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>QR Generator</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Generate Student QR Code</h1>
+        <form id="qrForm">
+            <div class="form-group">
+                <label for="student_id">Student ID:</label>
+                <input type="text" id="student_id" name="student_id" required>
+            </div>
+            <div class="form-group">
+                <label for="student_name">Name:</label>
+                <input type="text" id="student_name" name="student_name" required>
+            </div>
+            <div class="form-group">
+                <label for="department">Department:</label>
+                <input type="text" id="department" name="department" required>
+            </div>
+            <div class="form-group">
+                <label for="class">Class:</label>
+                <input type="text" id="class" name="class" required>
+            </div>
+            <div class="form-group">
+                <label for="phone">Phone:</label>
+                <input type="text" id="phone" name="phone" required>
+            </div>
+            <div class="form-group">
+                <label for="alt_phone">Alternate Phone:</label>
+                <input type="text" id="alt_phone" name="alt_phone">
+            </div>
+            <button type="submit" class="btn">Generate QR Code</button>
+        </form>
+        <div id="qrResult" class="qr-result">
+            <div id="qrImageContainer"></div>
+        </div>
+        <a href="/" class="btn back-btn">Back to Home</a>
+    </div>
+    <script src="/static/script.js"></script>
+</body>
+</html>

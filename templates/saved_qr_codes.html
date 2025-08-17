@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Saved QR Codes</title>
+    <link rel="stylesheet" href="/static/style.css">
+</head>
+<body>
+    <div class="container">
+        <h1>Saved QR Codes</h1>
+        <a href="/" class="btn">Back to Home</a>
+        
+        <div class="qr-grid">
+            {% for qr_file in qr_files %}
+            <div class="qr-item">
+                <img src="{{ url_for('get_qr', filename=qr_file) }}" alt="QR Code">
+                <p>{{ qr_file }}</p>
+            </div>
+            {% endfor %}
+        </div>
+    </div>
+</body>
+</html>
