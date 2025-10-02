@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card mb-4">
+            <div class="card-body">
+                <h2 class="card-title"><i class="fas fa-tachometer-alt me-2"></i>Dashboard</h2>
+                <p class="text-muted">Welcome back, {{ session.username }}!</p>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row">
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0">{{ student_count }}</h3>
+                    <p class="mb-0">Total Students</p>
+                </div>
+                <i class="fas fa-users fa-2x"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0">{{ scan_count }}</h3>
+                    <p class="mb-0">Total Scans</p>
+                </div>
+                <i class="fas fa-qrcode fa-2x"></i>
+            </div>
+        </div>
+    </div>
+    <div class="col-md-4">
+        <div class="stat-card">
+            <div class="d-flex justify-content-between align-items-center">
+                <div>
+                    <h3 class="mb-0" id="todayScans">0</h3>
+                    <p class="mb-0">Today's Scans</p>
+                </div>
+                <i class="fas fa-calendar-day fa-2x"></i>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div class="row mt-4">
+    <div class="col-md-8">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-history me-2"></i>Recent Scans</h5>
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Student ID</th>
+                                <th>Name</th>
+                                <th>Department</th>
+                                <th>Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for scan in recent_scans %}
+                            <tr>
+                                <td>{{ scan.student_id }}</td>
+                                <td>{{ scan.name }}</td>
+                                <td>{{ scan.department }}</td>
+                                <td>{{ scan.scan_time }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="4" class="text-center text-muted">No scans yet</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+    
+    <div class="col-md-4">
+        <div class="card">
+            <div class="card-body">
+                <h5 class="card-title"><i class="fas fa-rocket me-2"></i>Quick Actions</h5>
+                <div class="d-grid gap-2">
+                    <a href="{{ url_for('generator') }}" class="btn btn-primary">
+                        <i class="fas fa-qrcode me-2"></i>Generate QR
+                    </a>
+                    <a href="{{ url_for('scanner') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-camera me-2"></i>Scan QR
+                    </a>
+                    <a href="{{ url_for('saved_qr_codes') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-images me-2"></i>View Codes
+                    </a>
+                    <a href="{{ url_for('scan_history') }}" class="btn btn-outline-primary">
+                        <i class="fas fa-history me-2"></i>Scan History
+                    </a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Fetch today's scans
+    fetch('/api/stats')
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('todayScans').textContent = data.today_scans;
+        });
+</script>
+{% endblock %}

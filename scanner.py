@@ -46,4 +46,3 @@ while True:
         break
     
 fob.close()
-

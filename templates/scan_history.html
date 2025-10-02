@@ -1,0 +1,645 @@
+<!-- {% extends "base.html" %}
+
+{% block title %}Scan History{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <h2 class="card-title"><i class="fas fa-history me-2"></i>Scan History</h2>
+                <p class="text-muted">View all QR code scans in the system.</p>
+                
+                <div class="table-responsive">
+                    <table class="table table-hover">
+                        <thead>
+                            <tr>
+                                <th>Scan ID</th>
+                                <th>Student ID</th>
+                                <th>Name</th>
+                                <th>Department</th>
+                                <th>Scan Time</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for scan in scans %}
+                            <tr>
+                                <td>#{{ scan.id }}</td>
+                                <td>{{ scan.student_id }}</td>
+                                <td>{{ scan.name or scan.student_name }}</td>
+                                <td>{{ scan.department }}</td>
+                                <td>{{ scan.scan_time }}</td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="5" class="text-center text-muted py-4">
+                                    <i class="fas fa-inbox fa-3x mb-3"></i>
+                                    <p>No scan history found</p>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %} -->
+
+
+{% extends "base.html" %}
+
+{% block title %}Scan History{% endblock %}
+
+{% block content %}
+<div class="row">
+    <div class="col-12">
+        <div class="card">
+            <div class="card-body">
+                <div class="d-flex justify-content-between align-items-center mb-4">
+                    <h2 class="card-title mb-0"><i class="fas fa-history me-2"></i>Scan History</h2>
+                    <div>
+                        <button class="btn btn-outline-primary me-2" onclick="refreshScanHistory()">
+                            <i class="fas fa-sync-alt me-2"></i>Refresh
+                        </button>
+                        <button class="btn btn-outline-success" onclick="showExportModal()">
+                            <i class="fas fa-download me-2"></i>Export
+                        </button>
+                    </div>
+                </div>
+                
+                <p class="text-muted">View all QR code scans recorded in the system.</p>
+
+                <!-- Debug Info -->
+                <div class="alert alert-info">
+                    <i class="fas fa-info-circle me-2"></i>
+                    Total scans found: <strong>{{ scans|length }}</strong>
+                    {% if scans|length == 0 %}
+                    - No scans recorded yet. <a href="/test_generate" class="alert-link">Generate test data</a> or scan some QR codes.
+                    {% endif %}
+                </div>
+
+                <!-- Statistics Cards -->
+                <div class="row mb-4">
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h3 class="mb-0" id="totalScans">{{ scans|length }}</h3>
+                                    <p class="mb-0">Total Scans</p>
+                                </div>
+                                <i class="fas fa-qrcode fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h3 class="mb-0" id="todayScans">0</h3>
+                                    <p class="mb-0">Today's Scans</p>
+                                </div>
+                                <i class="fas fa-calendar-day fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h3 class="mb-0" id="uniqueStudents">0</h3>
+                                    <p class="mb-0">Unique Students</p>
+                                </div>
+                                <i class="fas fa-users fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <div class="stat-card">
+                            <div class="d-flex justify-content-between align-items-center">
+                                <div>
+                                    <h3 class="mb-0" id="last7Days">0</h3>
+                                    <p class="mb-0">Last 7 Days</p>
+                                </div>
+                                <i class="fas fa-chart-line fa-2x"></i>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="row mb-4">
+                    <div class="col-md-6">
+                        <div class="input-group">
+                            <span class="input-group-text"><i class="fas fa-search"></i></span>
+                            <input type="text" id="searchInput" class="form-control" placeholder="Search by student ID, name, or department...">
+                        </div>
+                    </div>
+                    <div class="col-md-3">
+                        <select id="dateFilter" class="form-select">
+                            <option value="">All Dates</option>
+                            <option value="today">Today</option>
+                            <option value="week">This Week</option>
+                            <option value="month">This Month</option>
+                        </select>
+                    </div>
+                    <div class="col-md-3">
+                        <select id="departmentFilter" class="form-select">
+                            <option value="">All Departments</option>
+                            {% set departments = [] %}
+                            {% for scan in scans %}
+                                {% if scan.department and scan.department not in departments %}
+                                    {% set _ = departments.append(scan.department) %}
+                                {% endif %}
+                            {% endfor %}
+                            {% for dept in departments | sort %}
+                                <option value="{{ dept }}">{{ dept }}</option>
+                            {% endfor %}
+                        </select>
+                    </div>
+                </div>
+
+                <!-- Scan History Table -->
+                <div class="table-responsive">
+                    <table class="table table-hover table-striped" id="scanTable">
+                        <thead class="table-dark">
+                            <tr>
+                                <th>#</th>
+                                <th>Student ID</th>
+                                <th>Student Name</th>
+                                <th>Department</th>
+                                <th>Class</th>
+                                <th>Scan Time</th>
+                                <th>Actions</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for scan in scans %}
+                            <tr class="scan-row">
+                                <td>{{ loop.index }}</td>
+                                <td>
+                                    <span class="badge bg-primary">{{ scan.student_id }}</span>
+                                </td>
+                                <td>
+                                    <strong>{{ scan.student_name }}</strong>
+                                </td>
+                                <td>
+                                    <span class="badge bg-info">{{ scan.department }}</span>
+                                </td>
+                                <td>{{ scan.class or 'N/A' }}</td>
+                                <td>
+                                    <div class="d-flex flex-column">
+                                        {% if scan.scan_time %}
+                                            {% set scan_date = scan.scan_time.split(' ') %}
+                                            <small class="text-muted">{{ scan_date[0] }}</small>
+                                            <strong>{{ scan_date[1] if scan_date|length > 1 else scan.scan_time }}</strong>
+                                        {% else %}
+                                            <small class="text-muted">Unknown</small>
+                                            <strong>No time recorded</strong>
+                                        {% endif %}
+                                    </div>
+                                </td>
+                                <td>
+                                    <button class="btn btn-sm btn-outline-info" onclick="viewScanDetails('{{ scan.student_id }}', '{{ scan.student_name }}', '{{ scan.department }}', '{{ scan.class or 'N/A' }}', '{{ scan.scan_time }}')" 
+                                            data-bs-toggle="tooltip" title="View Details">
+                                        <i class="fas fa-eye"></i>
+                                    </button>
+                                    {% if session.is_admin %}
+                                    <button class="btn btn-sm btn-outline-danger" onclick="deleteScan({{ scan.id }})"
+                                            data-bs-toggle="tooltip" title="Delete Scan">
+                                        <i class="fas fa-trash"></i>
+                                    </button>
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% else %}
+                            <tr>
+                                <td colspan="7" class="text-center py-5">
+                                    <div class="text-muted">
+                                        <i class="fas fa-inbox fa-4x mb-3"></i>
+                                        <h4>No Scan History Found</h4>
+                                        <p>QR code scans will appear here once students start scanning.</p>
+                                        <div class="mt-3">
+                                            <a href="{{ url_for('scanner') }}" class="btn btn-primary me-2">
+                                                <i class="fas fa-camera me-2"></i>Start Scanning
+                                            </a>
+                                            <a href="/test_generate" class="btn btn-outline-warning">
+                                                <i class="fas fa-vial me-2"></i>Generate Test Data
+                                            </a>
+                                        </div>
+                                    </div>
+                                </td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+
+                <!-- Pagination -->
+                {% if scans %}
+                <div class="d-flex justify-content-between align-items-center mt-4">
+                    <div class="text-muted">
+                        Showing <strong id="showingCount">{{ scans|length }}</strong> of <strong id="totalCount">{{ scans|length }}</strong> scans
+                    </div>
+                    <nav>
+                        <ul class="pagination mb-0">
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#">Previous</a>
+                            </li>
+                            <li class="page-item active">
+                                <a class="page-link" href="#">1</a>
+                            </li>
+                            <li class="page-item disabled">
+                                <a class="page-link" href="#">Next</a>
+                            </li>
+                        </ul>
+                    </nav>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Scan Details Modal -->
+<div class="modal fade" id="scanDetailsModal" tabindex="-1">
+    <div class="modal-dialog modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-info-circle me-2"></i>Scan Details</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body" id="scanDetailsContent">
+                <!-- Details will be loaded here -->
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Close</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Export Modal -->
+<div class="modal fade" id="exportModal" tabindex="-1">
+    <div class="modal-dialog">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title"><i class="fas fa-download me-2"></i>Export Scan History</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <div class="mb-3">
+                    <label class="form-label">Export Format</label>
+                    <select class="form-select" id="exportFormat">
+                        <option value="csv">CSV Format</option>
+                        <option value="json">JSON Format</option>
+                        <option value="pdf">PDF Report</option>
+                    </select>
+                </div>
+                <div class="mb-3">
+                    <label class="form-label">Date Range</label>
+                    <select class="form-select" id="exportDateRange">
+                        <option value="all">All Data</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                </div>
+            </div>
+            <div class="modal-footer">
+                <button type="button" class="btn btn-secondary" data-bs-dismiss="modal">Cancel</button>
+                <button type="button" class="btn btn-primary" onclick="exportScanData()">
+                    <i class="fas fa-download me-2"></i>Export
+                </button>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+    // Initialize tooltips
+    document.addEventListener('DOMContentLoaded', function() {
+        const tooltipTriggerList = [].slice.call(document.querySelectorAll('[data-bs-toggle="tooltip"]'));
+        const tooltipList = tooltipTriggerList.map(function (tooltipTriggerEl) {
+            return new bootstrap.Tooltip(tooltipTriggerEl);
+        });
+        
+        calculateStatistics();
+        updateShowingCount();
+    });
+
+    // Calculate statistics
+    function calculateStatistics() {
+        const scans = {{ scans | tojson }};
+        
+        if (scans.length === 0) {
+            document.getElementById('todayScans').textContent = '0';
+            document.getElementById('uniqueStudents').textContent = '0';
+            document.getElementById('last7Days').textContent = '0';
+            return;
+        }
+        
+        // Today's scans
+        const today = new Date().toISOString().split('T')[0];
+        const todayScans = scans.filter(scan => {
+            if (!scan.scan_time) return false;
+            const scanDate = scan.scan_time.split(' ')[0];
+            return scanDate === today;
+        }).length;
+        
+        // Unique students
+        const uniqueStudents = new Set(scans.map(scan => scan.student_id)).size;
+        
+        // Last 7 days scans
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const last7DaysScans = scans.filter(scan => {
+            if (!scan.scan_time) return false;
+            const scanDate = new Date(scan.scan_time);
+            return scanDate >= weekAgo;
+        }).length;
+
+        document.getElementById('todayScans').textContent = todayScans;
+        document.getElementById('uniqueStudents').textContent = uniqueStudents;
+        document.getElementById('last7Days').textContent = last7DaysScans;
+    }
+
+    // Update showing count
+    function updateShowingCount() {
+        const visibleRows = document.querySelectorAll('.scan-row[style=""]').length + 
+                           document.querySelectorAll('.scan-row:not([style])').length;
+        document.getElementById('showingCount').textContent = visibleRows;
+    }
+
+    // Search functionality
+    document.getElementById('searchInput').addEventListener('input', function() {
+        applyFilters();
+    });
+
+    // Filter functionality
+    document.getElementById('dateFilter').addEventListener('change', applyFilters);
+    document.getElementById('departmentFilter').addEventListener('change', applyFilters);
+
+    function applyFilters() {
+        const dateFilter = document.getElementById('dateFilter').value;
+        const deptFilter = document.getElementById('departmentFilter').value.toLowerCase();
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        
+        const rows = document.querySelectorAll('.scan-row');
+        let visibleCount = 0;
+
+        const today = new Date().toISOString().split('T')[0];
+        const weekAgo = new Date();
+        weekAgo.setDate(weekAgo.getDate() - 7);
+        const monthAgo = new Date();
+        monthAgo.setDate(monthAgo.getDate() - 30);
+
+        rows.forEach(row => {
+            const studentId = row.cells[1].textContent.toLowerCase();
+            const studentName = row.cells[2].textContent.toLowerCase();
+            const department = row.cells[3].textContent.toLowerCase();
+            const scanTime = row.cells[5].textContent.toLowerCase();
+            
+            const rowText = studentId + ' ' + studentName + ' ' + department;
+            
+            let dateMatch = true;
+            let deptMatch = true;
+            let searchMatch = rowText.includes(searchTerm);
+
+            // Date filtering
+            if (dateFilter === 'today') {
+                dateMatch = scanTime.includes(today);
+            } else if (dateFilter === 'week') {
+                // Check if scan date is within last 7 days
+                const scanDateText = row.cells[5].querySelector('.text-muted').textContent;
+                if (scanDateText) {
+                    const scanDate = new Date(scanDateText);
+                    dateMatch = scanDate >= weekAgo;
+                }
+            } else if (dateFilter === 'month') {
+                const scanDateText = row.cells[5].querySelector('.text-muted').textContent;
+                if (scanDateText) {
+                    const scanDate = new Date(scanDateText);
+                    dateMatch = scanDate >= monthAgo;
+                }
+            }
+
+            // Department filtering
+            if (deptFilter && !department.includes(deptFilter)) {
+                deptMatch = false;
+            }
+
+            if (dateMatch && deptMatch && searchMatch) {
+                row.style.display = '';
+                visibleCount++;
+            } else {
+                row.style.display = 'none';
+            }
+        });
+
+        document.getElementById('showingCount').textContent = visibleCount;
+    }
+
+    // View scan details
+    function viewScanDetails(studentId, studentName, department, className, scanTime) {
+        const modalContent = `
+            <div class="row">
+                <div class="col-md-6">
+                    <h6>Student Information</h6>
+                    <p><strong>Student ID:</strong> <code>${studentId}</code></p>
+                    <p><strong>Name:</strong> ${studentName}</p>
+                    <p><strong>Department:</strong> <span class="badge bg-info">${department}</span></p>
+                    <p><strong>Class:</strong> ${className}</p>
+                </div>
+                <div class="col-md-6">
+                    <h6>Scan Information</h6>
+                    <p><strong>Scan Time:</strong> ${scanTime || 'Not recorded'}</p>
+                    <p><strong>Recorded:</strong> ${new Date().toLocaleString()}</p>
+                    <p><strong>Status:</strong> <span class="badge bg-success">Verified</span></p>
+                </div>
+            </div>
+            <div class="mt-3 p-3 bg-light rounded">
+                <small class="text-muted">
+                    <i class="fas fa-info-circle me-1"></i>
+                    This scan was successfully recorded in the system database and can be used for attendance tracking.
+                </small>
+            </div>
+        `;
+
+        document.getElementById('scanDetailsContent').innerHTML = modalContent;
+        new bootstrap.Modal(document.getElementById('scanDetailsModal')).show();
+    }
+
+    // Delete scan (admin only)
+    function deleteScan(scanId) {
+        if (!confirm('Are you sure you want to delete this scan record? This action cannot be undone.')) {
+            return;
+        }
+
+        fetch(`/api/scan/${scanId}`, {
+            method: 'DELETE',
+            headers: {
+                'Content-Type': 'application/json',
+            }
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.status === 'success') {
+                alert('Scan record deleted successfully!');
+                refreshScanHistory();
+            } else {
+                alert('Error deleting scan: ' + data.message);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error deleting scan record. Please try again.');
+        });
+    }
+
+    // Refresh scan history
+    function refreshScanHistory() {
+        location.reload();
+    }
+
+    // Export functionality
+    function showExportModal() {
+        new bootstrap.Modal(document.getElementById('exportModal')).show();
+    }
+
+    function exportScanData() {
+        const format = document.getElementById('exportFormat').value;
+        const dateRange = document.getElementById('exportDateRange').value;
+        
+        // Simple CSV export implementation
+        if (format === 'csv') {
+            exportToCSV();
+        } else {
+            alert(`Export feature for ${format.toUpperCase()} format is coming soon!`);
+        }
+        
+        // Close modal
+        bootstrap.Modal.getInstance(document.getElementById('exportModal')).hide();
+    }
+
+    function exportToCSV() {
+        const scans = {{ scans | tojson }};
+        if (scans.length === 0) {
+            alert('No data to export!');
+            return;
+        }
+
+        // CSV header
+        let csv = 'Student ID,Student Name,Department,Class,Scan Time\n';
+        
+        // CSV rows
+        scans.forEach(scan => {
+            const row = [
+                `"${scan.student_id}"`,
+                `"${scan.student_name}"`,
+                `"${scan.department}"`,
+                `"${scan.class || 'N/A'}"`,
+                `"${scan.scan_time}"`
+            ];
+            csv += row.join(',') + '\n';
+        });
+
+        // Create download link
+        const blob = new Blob([csv], { type: 'text/csv' });
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.setAttribute('hidden', '');
+        a.setAttribute('href', url);
+        a.setAttribute('download', `scan_history_${new Date().toISOString().split('T')[0]}.csv`);
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        
+        alert('CSV file downloaded successfully!');
+    }
+
+    // Reset filters
+    function resetFilters() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('dateFilter').value = '';
+        document.getElementById('departmentFilter').value = '';
+        applyFilters();
+    }
+</script>
+
+<style>
+.scan-row:hover {
+    background-color: rgba(67, 97, 238, 0.05) !important;
+    transform: translateY(-1px);
+    transition: all 0.2s ease;
+}
+
+.table th {
+    border-top: none;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+}
+
+.badge {
+    font-size: 0.75rem;
+    padding: 0.35em 0.65em;
+}
+
+.stat-card {
+    background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+    color: white;
+    border-radius: 15px;
+    padding: 20px;
+    margin-bottom: 20px;
+    box-shadow: 0 5px 15px rgba(67, 97, 238, 0.3);
+    transition: transform 0.2s ease;
+}
+
+.stat-card:hover {
+    transform: translateY(-2px);
+}
+
+.stat-card h3 {
+    font-weight: 700;
+    margin-bottom: 0.25rem;
+    font-size: 1.8rem;
+}
+
+.stat-card p {
+    margin-bottom: 0;
+    opacity: 0.9;
+    font-size: 0.9rem;
+}
+
+.pagination .page-link {
+    border-radius: 8px;
+    margin: 0 2px;
+    border: none;
+}
+
+.pagination .page-item.active .page-link {
+    background: linear-gradient(135deg, #4361ee 0%, #3a0ca3 100%);
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .stat-card h3 {
+        font-size: 1.4rem;
+    }
+    
+    .table-responsive {
+        font-size: 0.85rem;
+    }
+    
+    .btn-sm {
+        padding: 0.2rem 0.4rem;
+        font-size: 0.75rem;
+    }
+}
+</style>
+{% endblock %}
